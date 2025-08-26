@@ -1,0 +1,34 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+*.egg
+eggs/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+
+# Virtual environments
+.venv/
+env/
+venv/
+
+# Editors and system files
+.DS_Store
+Thumbs.db
+
+# Data and outputs
+outputs/
+*.db
+*.sqlite
+*.xlsx
+*.csv
+*.pdf
+*.txt
