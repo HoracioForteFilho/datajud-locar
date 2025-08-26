@@ -1,0 +1,77 @@
+name: DataJud Run
+
+on:
+  workflow_dispatch:
+    inputs:
+      nome:
+        description: Nome da parte (ex.: LOCAR SANEAMENTO AMBIENTAL LTDA)
+        required: true
+        default: "LOCAR SANEAMENTO AMBIENTAL LTDA"
+      cnpj:
+        description: CNPJ ou CPF da parte (somente dígitos)
+        required: true
+        default: "35474949000108"
+      tribunais:
+        description: Lista de tribunais (separados por espaço), por exemplo "tjpe tjba tjsp trf5"
+        required: true
+        default: "tjpe tjba tjsp trf5"
+      max_paginas:
+        description: Máximo de páginas por tribunal
+        required: true
+        default: "25"
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pages: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests pandas openpyxl fpdf2
+
+      - name: Ensure outputs dir
+        run: mkdir -p outputs
+
+      - name: Run DataJud pipeline
+        env:
+          DATAJUD_API_KEY: ${{ secrets.DATAJUD_API_KEY }}
+        run: |
+          python datajud_locar_pipeline_v2.py \
+            --nome "${{ github.event.inputs.nome }}" \
+            --cnpj "${{ github.event.inputs.cnpj }}" \
+            --tribunais ${{ github.event.inputs.tribunais }} \
+            --max-paginas ${{ github.event.inputs.max_paginas }} \
+            --excel outputs/processos.xlsx \
+            --pdf outputs/processos.pdf \
+            --sqlite outputs/processos.db \
+            --csv outputs/processos.csv
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: datajud-saida
+          path: outputs/
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: outputs/
+
+  deploy:
+    needs: run
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    steps:
+      - uses: actions/deploy-pages@v4
