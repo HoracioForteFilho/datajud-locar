@@ -49,7 +49,8 @@ except Exception:
     _HAS_FPDF = False
 
 try:
-    from requests.adapters import HTTPAdapter, Retry
+    from requests.adapters import HTTPAdapter
+    from urllib3.util.retry import Retry
 except Exception:
     HTTPAdapter = None  # type: ignore
     Retry = None  # type: ignore
