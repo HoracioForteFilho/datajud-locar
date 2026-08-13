@@ -37,7 +37,6 @@ import sqlite3
 import sys
 from typing import Dict, Iterable, List, Optional
 
-import pandas as pd
 import requests
 
 # Attempt to import FPDF (pdf export); fallback gracefully
@@ -100,6 +99,18 @@ KEYWORDS_EXECUCAO = [
     "leilão",
     "arrematação",
 ]
+
+
+def _dataframe(dados: Iterable[Dict[str, any]]):
+    """Build a DataFrame only when a tabular operation needs pandas."""
+    try:
+        import pandas as pd
+    except ImportError as exc:
+        raise RuntimeError(
+            "pandas is required for tabular exports; install it with "
+            "`python -m pip install pandas`."
+        ) from exc
+    return pd.DataFrame(dados)
 
 
 def create_session(max_retries: int = 5) -> requests.Session:
@@ -258,19 +269,19 @@ def buscar_processos(
 
 def exportar_excel(dados: Iterable[Dict[str, any]], caminho: str) -> None:
     """Export data to an Excel file using openpyxl via pandas."""
-    df = pd.DataFrame(dados)
+    df = _dataframe(dados)
     df.to_excel(caminho, index=False)
 
 
 def exportar_csv(dados: Iterable[Dict[str, any]], caminho: str) -> None:
     """Export data to a CSV file."""
-    df = pd.DataFrame(dados)
+    df = _dataframe(dados)
     df.to_csv(caminho, index=False)
 
 
 def exportar_sqlite(dados: Iterable[Dict[str, any]], caminho: str) -> None:
     """Export data to a SQLite database."""
-    df = pd.DataFrame(dados)
+    df = _dataframe(dados)
     with sqlite3.connect(caminho) as conn:
         df.to_sql("processos", conn, if_exists="replace", index=False)
 
@@ -388,7 +399,7 @@ def main(argv: Optional[List[str]] = None) -> None:
             print(f"  > {len(encontrados)} processos encontrados")
             dados.extend(encontrados)
         # Deduplicate by (cnj, tribunal)
-        df_all = pd.DataFrame(dados)
+        df_all = _dataframe(dados)
         if not df_all.empty:
             df_all.drop_duplicates(subset=["cnj", "tribunal"], inplace=True)
             dados = df_all.to_dict(orient="records")
